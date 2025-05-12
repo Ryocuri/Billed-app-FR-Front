@@ -27,7 +27,7 @@ const bills = [{
 }]
 
 describe('Given I am connected', () => {
-  describe('When I click on disconnect button', () => {
+  describe('When I click on disconnect button as Admin', () => {
     test(('Then, I should be sent to login page'), () => {
       const onNavigate = (pathname) => {
         document.body.innerHTML = ROUTES({ pathname })
@@ -45,6 +45,52 @@ describe('Given I am connected', () => {
       userEvent.click(disco)
       expect(handleClick).toHaveBeenCalled()
       expect(screen.getByText('Administration')).toBeTruthy()
+    })
+  })
+
+  describe('When I click on disconnect button as Employee', () => {
+    test(('Then, I should be sent to login page'), () => {
+      const onNavigate = jest.fn((pathname) => {
+        document.body.innerHTML = ROUTES({ pathname })
+      })
+      
+      // Setup as Employee with properly mocked localStorage
+      Object.defineProperty(window, 'localStorage', {
+        value: {
+          getItem: jest.fn(),
+          setItem: jest.fn(),
+          clear: jest.fn(),
+        },
+        writable: true
+      })
+      
+      // Use BillsUI instead of DashboardUI for employee view
+      const html = `
+        <div>
+          <div data-testid="layout-disconnect"></div>
+        </div>
+      `
+      document.body.innerHTML = html
+      
+      const logout = new Logout({
+        document,
+        onNavigate,
+        localStorage: window.localStorage
+      })
+      
+      const handleClick = jest.fn(logout.handleClick)
+      const disco = screen.getByTestId('layout-disconnect')
+      disco.addEventListener('click', handleClick)
+      userEvent.click(disco)
+      
+      // Check if logout handler was called
+      expect(handleClick).toHaveBeenCalled()
+      
+      // Check if localStorage was cleared
+      expect(window.localStorage.clear).toHaveBeenCalled()
+      
+      // Check if we were redirected to login page
+      expect(onNavigate).toHaveBeenCalledWith('/')
     })
   })
 })
